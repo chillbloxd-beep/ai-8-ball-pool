@@ -3,7 +3,8 @@ import { render } from './game/renderer.js';
 import { stepPhysics } from './game/physics.js';
 import { attachInput } from './game/input.js';
 import { applyShot, updateRules } from './game/rules.js';
-import { createShotRecord, saveShotRecord, exportShotRecords, replaceShotRecords, clearShotRecords } from './game/replay.js';
+import { createShotRecord, saveShotRecord, exportShotRecords, replaceShotRecords, clearShotRecords, loadShotRecords, enqueueShotForUpload, loadUploadQueue, saveUploadQueue } from './game/replay.js';
+import { postShotRecord } from './api/client.js';
 import { createReplayPlayer } from './game/replayPlayer.js';
 import { loadAssetManifest, preloadAssets } from './assetsConfig.js';
 
@@ -11,6 +12,7 @@ const CLIENT_VERSION = 'frontend-v1';
 const canvas = document.getElementById('table-canvas');
 const debugPanel = document.getElementById('debug-panel');
 const replayMeta = document.getElementById('replay-meta');
+const shotSyncStatusEl = document.getElementById('shot-sync-status');
 const ctx = canvas.getContext('2d');
 const assetStatusEl = document.getElementById('asset-status');
 
@@ -20,6 +22,7 @@ let accumulator = 0;
 let lastRecordedShot = 0;
 let replayPlayer = null;
 let renderAssets = null;
+let shotSyncStatus = 'local only';
 
 attachInput(canvas, state, (angle, power) => {
   if (replayPlayer) return;
@@ -27,6 +30,8 @@ attachInput(canvas, state, (angle, power) => {
 });
 wireDataButtons();
 wireReplayControls();
+wireSyncButtons();
+updateShotSyncStatus();
 runDeterminismTest(state);
 initAssets();
 
@@ -74,6 +79,10 @@ function maybeRecordShot() {
   try {
     saveShotRecord(record);
     lastRecordedShot = state.shotContext.shotNumber;
+    enqueueShotForUpload(record);
+    shotSyncStatus = 'syncing';
+    updateShotSyncStatus();
+    syncLocalShots();
   } catch (err) {
     console.error('Shot save failed:', err.message);
   }
@@ -239,4 +248,56 @@ async function initAssets() {
     renderAssets = null;
     assetStatusEl.textContent = `Assets unavailable, using shape fallback. (${err.message})`;
   }
+}
+
+
+function updateShotSyncStatus() {
+  if (!shotSyncStatusEl) return;
+  shotSyncStatusEl.textContent = `Shot Sync: ${shotSyncStatus}`;
+}
+
+async function syncLocalShots() {
+  const queue = loadUploadQueue();
+  if (!queue.length) {
+    shotSyncStatus = 'online saved';
+    updateShotSyncStatus();
+    return;
+  }
+
+  shotSyncStatus = 'syncing';
+  updateShotSyncStatus();
+
+  const remaining = [];
+  for (const record of queue) {
+    try {
+      await postShotRecord(record);
+    } catch (err) {
+      remaining.push(record);
+    }
+  }
+
+  saveUploadQueue(remaining);
+  shotSyncStatus = remaining.length ? 'upload failed' : 'online saved';
+  updateShotSyncStatus();
+}
+
+function wireSyncButtons() {
+  document.getElementById('sync-local-shots').addEventListener('click', async () => {
+    await syncLocalShots();
+  });
+
+  document.getElementById('export-local-dataset').addEventListener('click', () => {
+    const dataset = {
+      exportedAt: new Date().toISOString(),
+      count: loadShotRecords().length,
+      shots: loadShotRecords()
+    };
+    const blob = new Blob([JSON.stringify(dataset, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'local-shot-dataset.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  });
 }

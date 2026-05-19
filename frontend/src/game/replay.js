@@ -1,4 +1,5 @@
 const STORAGE_KEY = 'eight-ball-ai-shot-records-v1';
+const QUEUE_KEY = 'eight-ball-ai-shot-upload-queue-v1';
 
 export function snapshotBalls(state) {
   return state.balls.map((b) => ({ id: b.id, x: b.x, y: b.y, vx: b.vx, vy: b.vy, sunk: b.sunk, type: b.type }));
@@ -82,4 +83,33 @@ export function clearShotRecords() {
 
 export function exportShotRecords() {
   return JSON.stringify(loadShotRecords(), null, 2);
+}
+
+
+export function loadUploadQueue() {
+  const raw = localStorage.getItem(QUEUE_KEY);
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.filter(validateShotRecord) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function saveUploadQueue(queue) {
+  localStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
+}
+
+export function enqueueShotForUpload(record) {
+  if (!validateShotRecord(record)) throw new Error('Malformed shot record');
+  const q = loadUploadQueue();
+  q.push(record);
+  saveUploadQueue(q);
+}
+
+export function dequeueUploadedShot(matchFn) {
+  const q = loadUploadQueue();
+  const filtered = q.filter((r) => !matchFn(r));
+  saveUploadQueue(filtered);
 }
