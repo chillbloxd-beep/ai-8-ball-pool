@@ -1,0 +1,9 @@
+name = "eight-ball-ai-worker"
+main = "worker.js"
+compatibility_date = "2026-05-19"
+
+[vars]
+ALLOWED_ORIGIN = "https://<your-github-username>.github.io"
+SUPABASE_URL = "https://<project-ref>.supabase.co"
+# Set this as a secret in Cloudflare Dashboard (recommended) instead of plain vars:
+# SUPABASE_SERVICE_ROLE_KEY
