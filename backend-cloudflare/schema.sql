@@ -1,11 +1,11 @@
 -- Supabase Postgres schema for eight-ball-ai
--- Web-first path: apply this SQL in Supabase Dashboard SQL Editor.
+-- Recommended path: run in Supabase Dashboard -> SQL Editor (web-only setup).
 
 -- =========================
 -- users
 -- =========================
--- Stores player identity/profile metadata for game ownership, shot attribution,
--- and future matchmaking / analytics.
+-- Stores player identity/profile metadata for ownership, attribution,
+-- and future auth/profile extension.
 create table if not exists public.users (
   id uuid primary key default gen_random_uuid(),
   external_auth_id text unique,
@@ -18,8 +18,8 @@ create table if not exists public.users (
 -- =========================
 -- games
 -- =========================
--- Stores one game session/match with participants, status, outcome,
--- and summary metadata.
+-- Stores one game session with participants, lifecycle state, winner,
+-- and additional metadata.
 create table if not exists public.games (
   id uuid primary key default gen_random_uuid(),
   game_code text unique,
@@ -34,10 +34,40 @@ create table if not exists public.games (
 );
 
 -- =========================
+-- datasets
+-- =========================
+-- Catalog of dataset snapshots/filter configs used by training/evaluation.
+create table if not exists public.datasets (
+  id uuid primary key default gen_random_uuid(),
+  name text not null unique,
+  description text,
+  dataset_type text,
+  snapshot_ref text,
+  filters jsonb not null default '{}'::jsonb,
+  stats jsonb not null default '{}'::jsonb,
+  created_by_user_id uuid references public.users(id) on delete set null,
+  created_at timestamptz not null default now()
+);
+
+-- =========================
+-- ai_versions
+-- =========================
+-- Registry of AI model/policy versions and artifact metadata.
+create table if not exists public.ai_versions (
+  id uuid primary key default gen_random_uuid(),
+  version_tag text not null unique,
+  provider text,
+  model_type text,
+  parameters jsonb not null default '{}'::jsonb,
+  artifact_uri text,
+  notes text,
+  created_at timestamptz not null default now()
+);
+
+-- =========================
 -- shots
 -- =========================
--- Stores deterministic per-shot state snapshots and outcomes.
--- This is the core AI-training/event dataset table.
+-- Core per-shot deterministic data for analytics, replay, and AI training.
 create table if not exists public.shots (
   id uuid primary key default gen_random_uuid(),
   game_id uuid not null references public.games(id) on delete cascade,
@@ -57,8 +87,7 @@ create table if not exists public.shots (
 -- =========================
 -- replay_exports
 -- =========================
--- Stores exported replay bundles/metadata, including where they are stored
--- (Supabase Storage path, signed URL metadata, etc.).
+-- Stores exported replay bundles and storage references.
 create table if not exists public.replay_exports (
   id uuid primary key default gen_random_uuid(),
   game_id uuid not null references public.games(id) on delete cascade,
@@ -70,28 +99,13 @@ create table if not exists public.replay_exports (
 );
 
 -- =========================
--- ai_versions
--- =========================
--- Registry of AI model/policy versions used for simulation/evaluation.
-create table if not exists public.ai_versions (
-  id uuid primary key default gen_random_uuid(),
-  version_tag text not null unique,
-  provider text,
-  model_type text,
-  parameters jsonb not null default '{}'::jsonb,
-  artifact_uri text,
-  notes text,
-  created_at timestamptz not null default now()
-);
-
--- =========================
 -- ai_evaluations
 -- =========================
--- Evaluation runs and metrics tied to a specific ai_version and optional dataset.
+-- Stores evaluation results/metrics for a given AI version and dataset.
 create table if not exists public.ai_evaluations (
   id uuid primary key default gen_random_uuid(),
   ai_version_id uuid not null references public.ai_versions(id) on delete cascade,
-  dataset_id uuid,
+  dataset_id uuid references public.datasets(id) on delete set null,
   eval_name text not null,
   eval_scope text,
   games_played integer,
@@ -105,7 +119,7 @@ create table if not exists public.ai_evaluations (
 -- =========================
 -- training_runs
 -- =========================
--- Training job metadata for browser-based Colab/Kaggle or other pipelines.
+-- Stores training job metadata and links input/output artifacts.
 create table if not exists public.training_runs (
   id uuid primary key default gen_random_uuid(),
   run_name text not null,
@@ -122,51 +136,28 @@ create table if not exists public.training_runs (
 );
 
 -- =========================
--- datasets
--- =========================
--- Logical dataset catalog for training/eval (filters, snapshot references,
--- and provenance).
-create table if not exists public.datasets (
-  id uuid primary key default gen_random_uuid(),
-  name text not null unique,
-  description text,
-  dataset_type text,
-  snapshot_ref text,
-  filters jsonb not null default '{}'::jsonb,
-  stats jsonb not null default '{}'::jsonb,
-  created_by_user_id uuid references public.users(id) on delete set null,
-  created_at timestamptz not null default now()
-);
-
--- Add deferred FK now that datasets exists.
-alter table public.ai_evaluations
-  drop constraint if exists ai_evaluations_dataset_id_fkey,
-  add constraint ai_evaluations_dataset_id_fkey
-  foreign key (dataset_id) references public.datasets(id) on delete set null;
-
--- =========================
 -- Indexes
 -- =========================
--- shots query indexes
+-- Required shot indexes
 create index if not exists idx_shots_game_id on public.shots (game_id);
 create index if not exists idx_shots_player_id on public.shots (player_id);
 create index if not exists idx_shots_created_at on public.shots (created_at desc);
 create index if not exists idx_shots_quality_score on public.shots (quality_score);
 
--- generic created_at indexes for operational queries
+-- AI version evaluation fields
+create index if not exists idx_ai_evaluations_ai_version_id on public.ai_evaluations (ai_version_id);
+create index if not exists idx_ai_evaluations_dataset_id on public.ai_evaluations (dataset_id);
+create index if not exists idx_ai_evaluations_eval_name on public.ai_evaluations (eval_name);
+create index if not exists idx_ai_evaluations_created_at on public.ai_evaluations (created_at desc);
+
+-- Additional operational created_at indexes
 create index if not exists idx_games_created_at on public.games (created_at desc);
 create index if not exists idx_replay_exports_created_at on public.replay_exports (created_at desc);
 create index if not exists idx_ai_versions_created_at on public.ai_versions (created_at desc);
 create index if not exists idx_training_runs_created_at on public.training_runs (created_at desc);
 create index if not exists idx_datasets_created_at on public.datasets (created_at desc);
 
--- AI evaluation field indexes
-create index if not exists idx_ai_evaluations_ai_version_id on public.ai_evaluations (ai_version_id);
-create index if not exists idx_ai_evaluations_dataset_id on public.ai_evaluations (dataset_id);
-create index if not exists idx_ai_evaluations_eval_name on public.ai_evaluations (eval_name);
-create index if not exists idx_ai_evaluations_created_at on public.ai_evaluations (created_at desc);
-
--- Optional trigger to keep users.updated_at current
+-- Keep users.updated_at current on update
 create or replace function public.set_updated_at()
 returns trigger language plpgsql as $$
 begin
