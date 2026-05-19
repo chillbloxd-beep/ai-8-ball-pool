@@ -1,0 +1,67 @@
+:root {
+  --bg: #0e1726;
+  --panel: #111b2f;
+  --text: #e8eefc;
+  --muted: #9fb0d0;
+  --table-cloth: #0f7146;
+  --table-rail: #5f3b22;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: Inter, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+  color: var(--text);
+  background: radial-gradient(circle at top, #1d2b46, var(--bg));
+}
+
+.app-shell {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+h1 { margin: 0; }
+header p { margin-top: 6px; color: var(--muted); }
+
+.table-wrap {
+  margin-top: 12px;
+  background: var(--panel);
+  border: 1px solid #273556;
+  border-radius: 12px;
+  padding: 12px;
+}
+
+#table-canvas {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 8px;
+  cursor: crosshair;
+}
+
+.hud {
+  margin-top: 12px;
+  background: var(--panel);
+  border: 1px solid #273556;
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.debug-grid {
+  margin-top: 8px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(120px, 1fr));
+  gap: 8px;
+}
+
+.debug-cell {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px;
+  padding: 8px;
+}
+
+.debug-cell .label { color: var(--muted); font-size: 12px; }
+.debug-cell .value { font-size: 16px; font-weight: 700; margin-top: 4px; }

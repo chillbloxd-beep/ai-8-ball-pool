@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>eight-ball-ai (frontend v1)</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header>
+        <h1>eight-ball-ai</h1>
+        <p>Static frontend prototype (Canvas + ES modules)</p>
+      </header>
+
+      <section class="table-wrap">
+        <canvas id="table-canvas" width="1000" height="560" aria-label="Pool table canvas"></canvas>
+      </section>
+
+      <section class="hud">
+        <div><strong>Instructions:</strong> Aim with mouse. Hold click to set power, release to shoot.</div>
+        <div id="debug-panel" class="debug-grid"></div>
+      </section>
+    </main>
+
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>
