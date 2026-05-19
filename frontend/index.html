@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>eight-ball-ai (frontend v1)</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header>
+        <h1>eight-ball-ai</h1>
+        <p>Static frontend prototype (Canvas + ES modules)</p>
+      </header>
+
+      <section class="table-wrap">
+        <canvas id="table-canvas" width="1000" height="560" aria-label="Pool table canvas"></canvas>
+      </section>
+
+      <section class="hud">
+        <div><strong>Instructions:</strong> Aim with mouse. Hold click to set power, release to shoot.</div>
+        <div id="debug-panel" class="debug-grid"></div>
+        <div id="asset-status" class="asset-status">Assets: pending...</div>
+        <div id="shot-sync-status" class="asset-status">Shot Sync: local only</div>
+        <div id="ai-shot-status" class="asset-status">AI Shot: none (strength=good)</div>
+        <div class="data-actions">
+          <button id="export-shots" type="button">Export Shot JSON</button>
+          <button id="import-shots" type="button">Import Shot JSON</button>
+          <button id="clear-shots" type="button">Clear Local Data</button>
+          <button id="sync-local-shots" type="button">Sync Local Shots</button>
+          <button id="export-local-dataset" type="button">Export Local Dataset</button>
+          <button id="ai-suggest-shot" type="button">AI Suggest Shot</button>
+          <button id="ai-take-shot" type="button">AI Take Shot</button>
+          <select id="ai-strength"><option value="fast">Fast</option><option value="good" selected>Good</option><option value="strong">Strong</option><option value="pro">Pro</option></select>
+        </div>
+      </section>
+    
+      <section class="hud">
+        <h3>Replay Controls</h3>
+        <div class="data-actions">
+          <button id="replay-load" type="button">Load Replay JSON</button>
+          <button id="replay-prev" type="button">Previous Shot</button>
+          <button id="replay-play" type="button">Play</button>
+          <button id="replay-pause" type="button">Pause</button>
+          <button id="replay-next" type="button">Next Shot</button>
+          <select id="replay-speed">
+            <option value="0.5">0.5x</option><option value="1" selected>1x</option><option value="2">2x</option><option value="5">5x</option>
+          </select>
+        </div>
+        <div id="replay-meta" class="debug-grid"></div>
+      </section>
+
+    </main>
+
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>

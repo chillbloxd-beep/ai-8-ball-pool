@@ -1,0 +1,52 @@
+{
+  "assets": [
+    {
+      "name": "table-cloth",
+      "path": "./assets/table-cloth.png",
+      "sourceUrl": "self-made",
+      "license": "Proprietary (project-owned)",
+      "author": "eight-ball-ai team",
+      "notes": "Optional cloth texture. Fallback to flat color if missing."
+    },
+    {
+      "name": "rail-texture",
+      "path": "./assets/rail-texture.png",
+      "sourceUrl": "self-made",
+      "license": "Proprietary (project-owned)",
+      "author": "eight-ball-ai team",
+      "notes": "Optional rail texture. Fallback to flat rail fill if missing."
+    },
+    {
+      "name": "pocket",
+      "path": "./assets/pocket.png",
+      "sourceUrl": "self-made",
+      "license": "Proprietary (project-owned)",
+      "author": "eight-ball-ai team",
+      "notes": "Optional pocket sprite. Fallback to circle pocket if missing."
+    },
+    {
+      "name": "cue-ball",
+      "path": "./assets/cue-ball.png",
+      "sourceUrl": "self-made",
+      "license": "Proprietary (project-owned)",
+      "author": "eight-ball-ai team",
+      "notes": "Optional cue ball sprite. Fallback to generated circle if missing."
+    },
+    {
+      "name": "object-ball",
+      "path": "./assets/object-ball.png",
+      "sourceUrl": "self-made",
+      "license": "Proprietary (project-owned)",
+      "author": "eight-ball-ai team",
+      "notes": "Optional generic object ball sprite. Fallback to generated circles by type/number if missing."
+    },
+    {
+      "name": "cue",
+      "path": "./assets/cue.png",
+      "sourceUrl": "self-made",
+      "license": "Proprietary (project-owned)",
+      "author": "eight-ball-ai team",
+      "notes": "Optional cue overlay. Fallback to simple aim line if missing."
+    }
+  ]
+}
