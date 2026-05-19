@@ -26,6 +26,22 @@
           <button id="clear-shots" type="button">Clear Local Data</button>
         </div>
       </section>
+    
+      <section class="hud">
+        <h3>Replay Controls</h3>
+        <div class="data-actions">
+          <button id="replay-load" type="button">Load Replay JSON</button>
+          <button id="replay-prev" type="button">Previous Shot</button>
+          <button id="replay-play" type="button">Play</button>
+          <button id="replay-pause" type="button">Pause</button>
+          <button id="replay-next" type="button">Next Shot</button>
+          <select id="replay-speed">
+            <option value="0.5">0.5x</option><option value="1" selected>1x</option><option value="2">2x</option><option value="5">5x</option>
+          </select>
+        </div>
+        <div id="replay-meta" class="debug-grid"></div>
+      </section>
+
     </main>
 
     <script type="module" src="./src/main.js"></script>
