@@ -7,6 +7,7 @@ import { createShotRecord, saveShotRecord, exportShotRecords, replaceShotRecords
 import { postShotRecord } from './api/client.js';
 import { createReplayPlayer } from './game/replayPlayer.js';
 import { loadAssetManifest, preloadAssets } from './assetsConfig.js';
+import { suggestBestShot } from './ai/shotSearch.js';
 
 const CLIENT_VERSION = 'frontend-v1';
 const canvas = document.getElementById('table-canvas');
@@ -15,6 +16,7 @@ const replayMeta = document.getElementById('replay-meta');
 const shotSyncStatusEl = document.getElementById('shot-sync-status');
 const ctx = canvas.getContext('2d');
 const assetStatusEl = document.getElementById('asset-status');
+const aiShotStatusEl = document.getElementById('ai-shot-status');
 
 const state = createInitialState();
 let lastTs = performance.now();
@@ -23,6 +25,7 @@ let lastRecordedShot = 0;
 let replayPlayer = null;
 let renderAssets = null;
 let shotSyncStatus = 'local only';
+let lastAiSuggestion = null;
 
 attachInput(canvas, state, (angle, power) => {
   if (replayPlayer) return;
@@ -31,6 +34,7 @@ attachInput(canvas, state, (angle, power) => {
 wireDataButtons();
 wireReplayControls();
 wireSyncButtons();
+wireAiButtons();
 updateShotSyncStatus();
 runDeterminismTest(state);
 initAssets();
@@ -299,5 +303,26 @@ function wireSyncButtons() {
     a.download = 'local-shot-dataset.json';
     a.click();
     URL.revokeObjectURL(url);
+  });
+}
+
+
+function wireAiButtons() {
+  document.getElementById('ai-suggest-shot').addEventListener('click', () => {
+    if (replayPlayer) return;
+    const suggestion = suggestBestShot(state);
+    lastAiSuggestion = suggestion;
+    aiShotStatusEl.textContent = `AI Shot: angle=${suggestion.angle.toFixed(3)} power=${suggestion.power.toFixed(1)} score=${suggestion.score} | ${suggestion.explanation}`;
+    state.input.aimAngle = suggestion.angle;
+    state.input.power = suggestion.power;
+  });
+
+  document.getElementById('ai-take-shot').addEventListener('click', () => {
+    if (replayPlayer) return;
+    if (!lastAiSuggestion) {
+      lastAiSuggestion = suggestBestShot(state);
+    }
+    applyShot(state, lastAiSuggestion.angle, lastAiSuggestion.power);
+    aiShotStatusEl.textContent = `AI Shot taken: score=${lastAiSuggestion.score}`;
   });
 }
