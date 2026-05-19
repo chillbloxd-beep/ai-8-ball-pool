@@ -46,8 +46,9 @@ export function createInitialState() {
   return {
     config: PHYSICS_CONFIG,
     table,
-    players: ['Player 1', 'Player 2'],
+    players: [{ name: 'Player 1', group: null, potted: [] }, { name: 'Player 2', group: null, potted: [] }],
     currentPlayerIndex: 0,
+    winner: null,
     phase: 'aiming',
     shotNumber: 0,
     balls: [
@@ -72,7 +73,8 @@ export function createInitialState() {
       fps: 0,
       moving: false,
       determinism: 'Not run',
-      collisions: 0
+      collisions: 0,
+      lastReason: 'N/A'
     },
     events: []
   };

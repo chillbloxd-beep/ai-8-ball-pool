@@ -79,7 +79,7 @@ function summarize(s) {
 }
 
 function renderDebug(current) {
-  const player = current.players[current.currentPlayerIndex];
+  const player = current.players[current.currentPlayerIndex]?.name || 'N/A';
   const moving = current.debug.moving ? 'Yes' : 'No';
   const eventCount = current.events.length;
   debugPanel.innerHTML = `
