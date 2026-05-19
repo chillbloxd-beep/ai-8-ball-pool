@@ -7,7 +7,7 @@ import { createShotRecord, saveShotRecord, exportShotRecords, replaceShotRecords
 import { postShotRecord } from './api/client.js';
 import { createReplayPlayer } from './game/replayPlayer.js';
 import { loadAssetManifest, preloadAssets } from './assetsConfig.js';
-import { suggestBestShot } from './ai/shotSearch.js';
+import { runMonteCarloSearch } from './ai/shotSearch.js';
 
 const CLIENT_VERSION = 'frontend-v1';
 const canvas = document.getElementById('table-canvas');
@@ -26,6 +26,8 @@ let replayPlayer = null;
 let renderAssets = null;
 let shotSyncStatus = 'local only';
 let lastAiSuggestion = null;
+let aiWorker = null;
+let aiThinking = false;
 
 attachInput(canvas, state, (angle, power) => {
   if (replayPlayer) return;
@@ -308,13 +310,23 @@ function wireSyncButtons() {
 
 
 function wireAiButtons() {
-  document.getElementById('ai-suggest-shot').addEventListener('click', () => {
-    if (replayPlayer) return;
-    const suggestion = suggestBestShot(state);
-    lastAiSuggestion = suggestion;
-    aiShotStatusEl.textContent = `AI Shot: angle=${suggestion.angle.toFixed(3)} power=${suggestion.power.toFixed(1)} score=${suggestion.score} | ${suggestion.explanation}`;
-    state.input.aimAngle = suggestion.angle;
-    state.input.power = suggestion.power;
+  document.getElementById('ai-suggest-shot').addEventListener('click', async () => {
+    if (replayPlayer || aiThinking) return;
+    aiThinking = true;
+    const strength = document.getElementById('ai-strength').value;
+    aiShotStatusEl.textContent = `AI Shot: thinking... (0%) strength=${strength}`;
+    try {
+      const suggestion = await suggestShotViaWorker(state, strength, 20260519, 2500);
+      lastAiSuggestion = suggestion;
+      aiShotStatusEl.textContent = `AI Shot: angle=${suggestion.angle.toFixed(3)} power=${suggestion.power.toFixed(1)} score=${suggestion.score} | ${suggestion.explanation}`;
+      state.input.aimAngle = suggestion.angle;
+      state.input.power = suggestion.power;
+    } catch (e) {
+      aiShotStatusEl.textContent = `AI Shot: fallback due to timeout/error (${e.message})`;
+      lastAiSuggestion = runMonteCarloSearch(state, { strength: 'fast', seed: 20260519, timeoutMs: 700 });
+    } finally {
+      aiThinking = false;
+    }
   });
 
   document.getElementById('ai-take-shot').addEventListener('click', () => {
@@ -324,5 +336,40 @@ function wireAiButtons() {
     }
     applyShot(state, lastAiSuggestion.angle, lastAiSuggestion.power);
     aiShotStatusEl.textContent = `AI Shot taken: score=${lastAiSuggestion.score}`;
+  });
+}
+
+
+function suggestShotViaWorker(stateObj, strength, seed, timeoutMs) {
+  return new Promise((resolve, reject) => {
+    if (!aiWorker) aiWorker = new Worker('./ai/shotSearchWorker.js', { type: 'module' });
+    let done = false;
+    const timer = setTimeout(() => {
+      if (done) return;
+      done = true;
+      reject(new Error('AI search timeout'));
+    }, timeoutMs);
+
+    aiWorker.onmessage = (ev) => {
+      const msg = ev.data;
+      if (msg.type === 'progress') {
+        const pct = Math.min(100, Math.round((msg.checked / msg.budget) * 100));
+        aiShotStatusEl.textContent = `AI Shot: thinking... (${pct}%) best=${msg.bestScore ?? 'n/a'}`;
+      }
+      if (msg.type === 'done' && !done) {
+        done = true;
+        clearTimeout(timer);
+        resolve(msg.result);
+      }
+    };
+
+    aiWorker.onerror = (err) => {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      reject(new Error(err.message || 'AI worker error'));
+    };
+
+    aiWorker.postMessage({ state: stateObj, options: { strength, seed, timeoutMs: Math.max(200, timeoutMs - 100) } });
   });
 }
