@@ -70,3 +70,5 @@ header p { margin-top: 6px; color: var(--muted); }
 .data-actions { margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap; }
 .data-actions button { background:#223456; color:#e8eefc; border:1px solid #3a4f7a; border-radius:8px; padding:8px 12px; cursor:pointer; }
 .data-actions button:hover { background:#2d456f; }
+
+.asset-status { margin-top: 8px; color: var(--muted); font-size: 13px; }

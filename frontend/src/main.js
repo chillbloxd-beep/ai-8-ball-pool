@@ -5,18 +5,21 @@ import { attachInput } from './game/input.js';
 import { applyShot, updateRules } from './game/rules.js';
 import { createShotRecord, saveShotRecord, exportShotRecords, replaceShotRecords, clearShotRecords } from './game/replay.js';
 import { createReplayPlayer } from './game/replayPlayer.js';
+import { loadAssetManifest, preloadAssets } from './assetsConfig.js';
 
 const CLIENT_VERSION = 'frontend-v1';
 const canvas = document.getElementById('table-canvas');
 const debugPanel = document.getElementById('debug-panel');
 const replayMeta = document.getElementById('replay-meta');
 const ctx = canvas.getContext('2d');
+const assetStatusEl = document.getElementById('asset-status');
 
 const state = createInitialState();
 let lastTs = performance.now();
 let accumulator = 0;
 let lastRecordedShot = 0;
 let replayPlayer = null;
+let renderAssets = null;
 
 attachInput(canvas, state, (angle, power) => {
   if (replayPlayer) return;
@@ -25,6 +28,7 @@ attachInput(canvas, state, (angle, power) => {
 wireDataButtons();
 wireReplayControls();
 runDeterminismTest(state);
+initAssets();
 
 function loop(ts) {
   const frameDt = Math.min(0.05, (ts - lastTs) / 1000);
@@ -33,7 +37,7 @@ function loop(ts) {
   if (replayPlayer) {
     replayPlayer.stepFrame(frameDt);
     if (replayPlayer.runtime.simState) {
-      render(ctx, replayPlayer.runtime.simState);
+      render(ctx, replayPlayer.runtime.simState, renderAssets);
       renderReplayMeta(replayPlayer);
     }
   } else {
@@ -48,7 +52,7 @@ function loop(ts) {
     }
 
     maybeRecordShot();
-    render(ctx, state);
+    render(ctx, state, renderAssets);
   }
 
   state.debug.fps = Math.round(1 / Math.max(frameDt, 1 / 240));
@@ -219,3 +223,20 @@ function renderDebug(current) {
 }
 
 requestAnimationFrame(loop);
+
+
+async function initAssets() {
+  try {
+    assetStatusEl.textContent = 'Assets: loading manifest...';
+    const manifest = await loadAssetManifest();
+    const result = await preloadAssets(manifest, ({ loaded, total, name, ok }) => {
+      assetStatusEl.textContent = `Assets: ${loaded}/${total} loaded (${name}: ${ok ? 'ok' : 'fallback'})`;
+    });
+    renderAssets = result.images;
+    const failures = Object.values(result.images).filter((v) => !v.ok).length;
+    assetStatusEl.textContent = failures ? `Assets loaded with ${failures} fallback(s).` : 'Assets loaded successfully.';
+  } catch (err) {
+    renderAssets = null;
+    assetStatusEl.textContent = `Assets unavailable, using shape fallback. (${err.message})`;
+  }
+}
