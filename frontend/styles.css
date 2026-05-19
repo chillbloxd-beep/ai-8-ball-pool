@@ -65,3 +65,8 @@ header p { margin-top: 6px; color: var(--muted); }
 
 .debug-cell .label { color: var(--muted); font-size: 12px; }
 .debug-cell .value { font-size: 16px; font-weight: 700; margin-top: 4px; }
+
+
+.data-actions { margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap; }
+.data-actions button { background:#223456; color:#e8eefc; border:1px solid #3a4f7a; border-radius:8px; padding:8px 12px; cursor:pointer; }
+.data-actions button:hover { background:#2d456f; }

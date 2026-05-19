@@ -44,6 +44,7 @@ export function createInitialState() {
   };
 
   return {
+    gameId: `game-${Date.now()}`,
     config: PHYSICS_CONFIG,
     table,
     players: [{ name: 'Player 1', group: null, potted: [] }, { name: 'Player 2', group: null, potted: [] }],

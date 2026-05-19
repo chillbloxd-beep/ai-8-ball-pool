@@ -45,6 +45,21 @@ export function applyShot(state, angle, power) {
   state.phase = 'shot';
   state.shotNumber += 1;
   state.currentShotEvents = [];
+  state.shotContext = {
+    shotNumber: state.shotNumber,
+    playerId: state.currentPlayerIndex,
+    playerGroup: state.players[state.currentPlayerIndex]?.group ?? null,
+    timestamp: new Date().toISOString(),
+    shotInput: { angle, power, spinX: 0, spinY: 0 },
+    ballsBefore: state.balls.map((b) => ({ id: b.id, x: b.x, y: b.y, vx: b.vx, vy: b.vy, sunk: b.sunk, type: b.type })),
+    gameStateBefore: {
+      phase: 'shot',
+      shotNumber: state.shotNumber,
+      currentPlayerIndex: state.currentPlayerIndex,
+      players: state.players.map((p) => ({ name: p.name, group: p.group, potted: [...p.potted] })),
+      winner: state.winner
+    }
+  };
 }
 
 export function updateRules(state) {
